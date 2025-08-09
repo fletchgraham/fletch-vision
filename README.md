@@ -18,7 +18,9 @@ fletch-vision/
 ## Current Demos
 
 ### Webcam CV Demo
+
 A live webcam application with computer vision effects:
+
 - Live video capture and display
 - Real-time edge detection (press 'E' to toggle)
 - OpenGL rendering for smooth playback
@@ -96,6 +98,7 @@ make test
 ## Upcoming Features
 
 This foundation supports adding:
+
 - Multiple computer vision filters in one app
 - Object detection
 - Face recognition
