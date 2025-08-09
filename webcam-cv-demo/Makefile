@@ -4,13 +4,18 @@ SRCDIR = src
 OBJDIR = obj
 TARGET = webcam_cv_demo
 
+# GLFW paths and flags
+GLFW_PREFIX = /opt/homebrew/opt/glfw
+GLFW_INCLUDE = -I$(GLFW_PREFIX)/include
+GLFW_LIBS = -L$(GLFW_PREFIX)/lib -lglfw -framework OpenGL -framework Cocoa -framework IOKit
+
 all: $(TARGET)
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-$(TARGET): $(OBJDIR) src/main.cpp
-	$(CXX) $(CXXFLAGS) src/main.cpp -o $(TARGET)
+$(TARGET): $(OBJDIR) src/main_windowed.cpp
+	$(CXX) $(CXXFLAGS) $(GLFW_INCLUDE) src/main_windowed.cpp $(GLFW_LIBS) -o $(TARGET)
 
 clean:
 	rm -rf $(OBJDIR) $(TARGET)
@@ -18,4 +23,5 @@ clean:
 run: $(TARGET)
 	./$(TARGET)
 
+.PHONY: all clean run
 .PHONY: all clean run
