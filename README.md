@@ -1,6 +1,28 @@
-# Webcam CV Demo
+# Fletch Vision
 
-A C++ computer vision demo application that displays live webcam feed in a window using OpenCV and GLFW.
+A C++ computer vision project with multiple demos and applications using OpenCV, GLFW, and OpenGL.
+
+## Project Structure
+
+```
+fletch-vision/
+├── src/               # Source code for all demos
+├── include/           # Header files
+├── obj/               # Object files (build artifacts)
+├── bin/               # Compiled binaries
+├── fletchBricks/      # Breakout game demo
+├── Makefile           # Build configuration
+└── CMakeLists.txt     # Alternative CMake build
+```
+
+## Current Demos
+
+### Webcam CV Demo
+A live webcam application with computer vision effects:
+- Live video capture and display
+- Real-time edge detection (press 'E' to toggle)
+- OpenGL rendering for smooth playback
+- Graceful fallback when camera unavailable
 
 ## Prerequisites
 
@@ -30,26 +52,35 @@ On macOS, the app will request camera access when first launched. You can also m
 
 ## Building and Running
 
-### Option 1: Using Makefile
+### Option 1: Using Makefile (Recommended)
 
 ```bash
 make clean && make
 ./webcam_cv_demo
 ```
 
-### Option 2: Using CMake (Alternative)
+### Option 2: Using CMake
 
 ```bash
-mkdir build
+mkdir -p build
 cd build
 cmake ..
 make
 ./bin/webcam_cv_demo
 ```
 
+### Testing Camera Connection
+
+```bash
+# Build and run a simple camera test
+make test
+./camera_test
+```
+
 ## Controls
 
 - **ESC key** - Quit the application
+- **E key** - Toggle edge detection filter
 - The window shows live webcam feed if camera is available
 - Falls back to colored background if camera access is denied
 
@@ -60,12 +91,14 @@ make
 - ✅ Cross-platform window management with GLFW
 - ✅ Graceful fallback when camera is unavailable
 - ✅ Proper resource cleanup
+- ✅ Real-time edge detection filter
 
-## Next Steps
+## Upcoming Features
 
 This foundation supports adding:
-- Real-time image filters
+- Multiple computer vision filters in one app
 - Object detection
 - Face recognition
 - Motion tracking
-- Computer vision effects
+- Interactive demos selection
+- Real-time parameter adjustment
