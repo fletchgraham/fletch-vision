@@ -8,6 +8,9 @@ cv::Mat frame;
 GLuint textureID;
 bool webcamActive = false;
 
+// Simple edge detection toggle
+bool edgeDetectionEnabled = false;
+
 // Error callback function
 void error_callback(int error, const char* description) {
     std::cerr << "GLFW Error " << error << ": " << description << std::endl;
@@ -17,6 +20,10 @@ void error_callback(int error, const char* description) {
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
+    }
+    if (key == GLFW_KEY_E && action == GLFW_PRESS) {
+        edgeDetectionEnabled = !edgeDetectionEnabled;
+        std::cout << "Edge detection: " << (edgeDetectionEnabled ? "ON" : "OFF") << std::endl;
     }
 }
 
@@ -60,6 +67,26 @@ bool initWebcam() {
     std::cerr << "2. No other app is using the camera" << std::endl;
     std::cerr << "3. Camera is properly connected" << std::endl;
     return false;
+}
+
+// Simple edge detection processing
+cv::Mat processFrame(const cv::Mat& inputFrame) {
+    if (inputFrame.empty() || !edgeDetectionEnabled) {
+        return inputFrame;  // Return original if empty or edge detection disabled
+    }
+    
+    cv::Mat gray, edges, result;
+    
+    // Convert to grayscale
+    cv::cvtColor(inputFrame, gray, cv::COLOR_BGR2GRAY);
+    
+    // Apply simple Canny edge detection with fixed thresholds
+    cv::Canny(gray, edges, 50, 150);
+    
+    // Convert edges back to 3-channel for display
+    cv::cvtColor(edges, result, cv::COLOR_GRAY2BGR);
+    
+    return result;
 }
 
 // Convert OpenCV Mat to OpenGL texture
@@ -142,7 +169,8 @@ int main() {
     webcamActive = initWebcam();
     
     if (webcamActive) {
-        std::cout << "Live webcam feed active! Press ESC to close." << std::endl;
+        std::cout << "🎥 Live webcam feed active! Press ESC to close, E to toggle edge detection." << std::endl;
+        std::cout << "Edge detection: " << (edgeDetectionEnabled ? "ON" : "OFF") << std::endl;
     } else {
         std::cout << "Webcam failed to initialize. Showing colored background. Press ESC to close." << std::endl;
     }
@@ -159,7 +187,9 @@ int main() {
             // Capture frame from webcam
             cap >> frame;
             if (!frame.empty()) {
-                matToTexture(frame);
+                // Process frame (apply edge detection if enabled)
+                cv::Mat processedFrame = processFrame(frame);
+                matToTexture(processedFrame);
                 glClear(GL_COLOR_BUFFER_BIT);
                 renderTexture(width, height);
             }
