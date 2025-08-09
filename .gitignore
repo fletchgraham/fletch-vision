@@ -1,0 +1,74 @@
+# Build artifacts
+build/
+obj/
+bin/
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+
+# Executables
+webcam_cv_demo
+**/webcam_cv_demo
+fletchBricks/output
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestFile.cmake
+
+# IDE and Editor files
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/c_cpp_properties.json
+*.swp
+*.swo
+*~
+
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Package managers
+vcpkg_installed/
+conan/
+.conan/
+
+# OpenCV or other library builds (if built from source)
+opencv/
+opencv-build/
+
+# Documentation generated files
+docs/html/
+docs/latex/
+
+# Test coverage
+*.gcov
+*.gcno
+*.gcda
+
+# Profiling
+*.prof
+gmon.out
+
+# Core dumps
+core
+core.*
+
+# Reference stuff
+fletchBricks/**
