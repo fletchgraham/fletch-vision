@@ -81,7 +81,7 @@ The depth estimation feature uses MiDaS neural network models in ONNX format.
 1. Download the recommended model:
 
 ```bash
-curl -L -o models/model-small.onnx https://github.com/isl-org/MiDaS/releases/download/v2_1/model-small.onnx
+curl -L -o models/midasv2_small_256x256.onnx https://github.com/isl-org/MiDaS/releases/download/v2_1/model-small.onnx
 ```
 
 2. Build and run the application:
@@ -93,9 +93,11 @@ make clean && make
 
 3. Press **D** to toggle depth estimation
 
-### Model Options:
+### Model Details:
 
-- **model-small.onnx** (21MB) - Real-time performance, good accuracy
-- **model-f6b98070.onnx** (103MB) - Higher accuracy, slower performance
+- **midasv2_small_256x256.onnx** (64MB) - MiDaS v2.1 Small model
+- Input resolution: 256×256
+- Real-time performance with good accuracy
+- Compatible with OpenCV 4.12.0 DNN module
 
 See `models/README.md` for detailed download instructions.
