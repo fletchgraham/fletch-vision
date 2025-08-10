@@ -1,6 +1,7 @@
 #include <GLFW/glfw3.h>
 #include <opencv2/opencv.hpp>
 #include <iostream>
+#include "DepthEstimator.h"
 
 // Global variables
 cv::VideoCapture cap;
@@ -14,6 +15,10 @@ bool edgeDetectionEnabled = false;
 // Face detection toggle and classifier
 bool faceDetectionEnabled = false;
 cv::CascadeClassifier faceCascade;
+
+// Depth estimation toggle and estimator
+bool depthEstimationEnabled = false;
+DepthEstimator depthEstimator;
 
 // Error callback function
 void error_callback(int error, const char* description) {
@@ -32,6 +37,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_F && action == GLFW_PRESS) {
         faceDetectionEnabled = !faceDetectionEnabled;
         std::cout << "Face detection: " << (faceDetectionEnabled ? "ON" : "OFF") << std::endl;
+    }
+    if (key == GLFW_KEY_D && action == GLFW_PRESS) {
+        depthEstimationEnabled = !depthEstimationEnabled;
+        std::cout << "Depth estimation: " << (depthEstimationEnabled ? "ON" : "OFF") << std::endl;
     }
 }
 
@@ -99,7 +108,28 @@ bool initFaceDetection() {
     return false;
 }
 
-// Process frame with edge detection and/or face detection
+// Initialize depth estimation
+bool initDepthEstimation() {
+    // Try to load MiDaS v2.1 small model - lightweight and proven working
+    std::vector<std::string> modelPaths = {
+        "models/midasv2_small_256x256.onnx",
+        "midasv2_small_256x256.onnx"
+    };
+    
+    for (const std::string& path : modelPaths) {
+        if (depthEstimator.initialize(path)) {
+            std::cout << "✅ MiDaS v2.1 depth estimation initialized from: " << path << std::endl;
+            return true;
+        }
+    }
+    
+    std::cerr << "❌ Error: Could not load MiDaS v2.1 depth estimation model" << std::endl;
+    std::cerr << "Make sure midasv2_small_256x256.onnx is in the models/ directory" << std::endl;
+    std::cerr << "Download from: https://github.com/isl-org/MiDaS/releases/download/v2_1/model-small.onnx" << std::endl;
+    return false;
+}
+
+// Process frame with edge detection, face detection, and/or depth estimation
 cv::Mat processFrame(const cv::Mat& inputFrame) {
     if (inputFrame.empty()) {
         return inputFrame;
@@ -115,6 +145,15 @@ cv::Mat processFrame(const cv::Mat& inputFrame) {
         cv::cvtColor(edges, result, cv::COLOR_GRAY2BGR);
     }
     
+    // Apply depth estimation if enabled
+    if (depthEstimationEnabled && depthEstimator.isInitialized()) {
+        cv::Mat depthMap = depthEstimator.estimateDepth(inputFrame);
+        if (!depthMap.empty()) {
+            // Overlay depth heat map on the current result
+            result = depthEstimator.overlayDepthHeatMap(result, depthMap, 0.6f);
+        }
+    }
+    
     // Apply face detection if enabled
     if (faceDetectionEnabled && !faceCascade.empty()) {
         cv::Mat gray;
@@ -123,13 +162,9 @@ cv::Mat processFrame(const cv::Mat& inputFrame) {
         std::vector<cv::Rect> faces;
         faceCascade.detectMultiScale(gray, faces, 1.1, 3, 0, cv::Size(30, 30));
         
-        // If edge detection is enabled, draw boxes on the edge-detected image
-        // Otherwise draw on the original image
-        cv::Mat& drawFrame = edgeDetectionEnabled ? result : result;
-        
         // Draw bounding boxes around detected faces
         for (const cv::Rect& face : faces) {
-            cv::rectangle(drawFrame, face, cv::Scalar(0, 255, 0), 2);
+            cv::rectangle(result, face, cv::Scalar(0, 255, 0), 2);
             
             // Add a label
             std::string label = "Face";
@@ -140,7 +175,7 @@ cv::Mat processFrame(const cv::Mat& inputFrame) {
             // Ensure label is within frame bounds
             if (labelPos.y < 0) labelPos.y = face.y + labelSize.height + 10;
             
-            cv::putText(drawFrame, label, labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+            cv::putText(result, label, labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
         }
         
         // Print number of faces detected
@@ -236,6 +271,9 @@ int main() {
     // Initialize face detection
     bool faceDetectionAvailable = initFaceDetection();
     
+    // Initialize depth estimation
+    bool depthEstimationAvailable = initDepthEstimation();
+    
     if (webcamActive) {
         std::cout << "🎥 Live webcam feed active! Controls:" << std::endl;
         std::cout << "  ESC - Exit" << std::endl;
@@ -244,6 +282,11 @@ int main() {
             std::cout << "  F   - Toggle face detection (currently " << (faceDetectionEnabled ? "ON" : "OFF") << ")" << std::endl;
         } else {
             std::cout << "  F   - Face detection (unavailable - cascade not loaded)" << std::endl;
+        }
+        if (depthEstimationAvailable) {
+            std::cout << "  D   - Toggle depth estimation heat map (currently " << (depthEstimationEnabled ? "ON" : "OFF") << ")" << std::endl;
+        } else {
+            std::cout << "  D   - Depth estimation (unavailable - model not loaded)" << std::endl;
         }
     } else {
         std::cout << "Webcam failed to initialize. Showing colored background. Press ESC to close." << std::endl;
