@@ -85,15 +85,15 @@ cv::Mat DepthEstimator::estimateDepth(const cv::Mat& inputImage) {
 }
 
 bool DepthEstimator::normalizeMinMax(const cv::Mat& matDepth, cv::Mat& matDepthNormalized) {
-    // Normalize to uint8_t(0-255) (Far = 255, Near = 0)
-    // Based on iwatake2222 implementation
+    // Normalize to uint8_t(0-255) (Near = 255, Far = 0)
+    // For INFERNO colormap: white/yellow = close, black = far
     matDepthNormalized = cv::Mat(kModelInputHeight, kModelInputWidth, CV_8UC1);
     double depthMin, depthMax;
     cv::minMaxLoc(matDepth, &depthMin, &depthMax);
     double range = depthMax - depthMin;
     if (range > 0) {
         matDepth.convertTo(matDepthNormalized, CV_8UC1, 255.0 / range, (-255.0 * depthMin) / range);
-        matDepthNormalized = 255 - matDepthNormalized;
+        // Remove the inversion so that smaller depth values = higher normalized values = brighter colors
         return true;
     } else {
         return false;
@@ -111,7 +111,7 @@ cv::Mat DepthEstimator::createDepthHeatMap(const cv::Mat& depthMap) {
     }
     
     cv::Mat heatMap;
-    cv::applyColorMap(normalizedDepth, heatMap, cv::COLORMAP_JET);
+    cv::applyColorMap(normalizedDepth, heatMap, cv::COLORMAP_INFERNO);
     
     return heatMap;
 }
