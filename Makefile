@@ -26,8 +26,8 @@ test: $(CAMERA_TEST)
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-$(TARGET): $(OBJDIR) src/main_windowed.cpp
-	$(CXX) $(CXXFLAGS) $(ALL_INCLUDES) src/main_windowed.cpp $(ALL_LIBS) -o $(TARGET)
+$(TARGET): $(OBJDIR) src/main.cpp
+	$(CXX) $(CXXFLAGS) $(ALL_INCLUDES) src/main.cpp $(ALL_LIBS) -o $(TARGET)
 
 $(CAMERA_TEST): camera_test.cpp
 	$(CXX) $(CXXFLAGS) $(OPENCV_INCLUDE) camera_test.cpp $(OPENCV_LIBS) -o $(CAMERA_TEST)

@@ -16,7 +16,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(include)
 
 # Add executable
-add_executable(fletch_vision src/main_windowed.cpp)
+add_executable(fletch_vision src/main.cpp)
 
 # Link libraries
 target_link_libraries(fletch_vision ${OpenCV_LIBS} glfw)
