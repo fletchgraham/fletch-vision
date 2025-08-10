@@ -13,7 +13,7 @@ GLFW_LIBS = -L$(GLFW_PREFIX)/lib -lglfw -framework OpenGL -framework Cocoa -fram
 # OpenCV paths and flags
 OPENCV_PREFIX = /opt/homebrew/opt/opencv
 OPENCV_INCLUDE = -I$(OPENCV_PREFIX)/include/opencv4
-OPENCV_LIBS = -L$(OPENCV_PREFIX)/lib -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lopencv_videoio
+OPENCV_LIBS = -L$(OPENCV_PREFIX)/lib -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lopencv_videoio -lopencv_objdetect
 
 # Combined flags
 ALL_INCLUDES = $(GLFW_INCLUDE) $(OPENCV_INCLUDE)

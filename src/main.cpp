@@ -11,6 +11,10 @@ bool webcamActive = false;
 // Simple edge detection toggle
 bool edgeDetectionEnabled = false;
 
+// Face detection toggle and classifier
+bool faceDetectionEnabled = false;
+cv::CascadeClassifier faceCascade;
+
 // Error callback function
 void error_callback(int error, const char* description) {
     std::cerr << "GLFW Error " << error << ": " << description << std::endl;
@@ -24,6 +28,10 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     if (key == GLFW_KEY_E && action == GLFW_PRESS) {
         edgeDetectionEnabled = !edgeDetectionEnabled;
         std::cout << "Edge detection: " << (edgeDetectionEnabled ? "ON" : "OFF") << std::endl;
+    }
+    if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+        faceDetectionEnabled = !faceDetectionEnabled;
+        std::cout << "Face detection: " << (faceDetectionEnabled ? "ON" : "OFF") << std::endl;
     }
 }
 
@@ -69,22 +77,79 @@ bool initWebcam() {
     return false;
 }
 
-// Simple edge detection processing
-cv::Mat processFrame(const cv::Mat& inputFrame) {
-    if (inputFrame.empty() || !edgeDetectionEnabled) {
-        return inputFrame;  // Return original if empty or edge detection disabled
+// Initialize face detection
+bool initFaceDetection() {
+    // Try to load the frontal face cascade classifier
+    std::vector<std::string> cascadePaths = {
+        "/opt/homebrew/share/opencv4/haarcascades/haarcascade_frontalface_alt.xml",
+        "/usr/local/share/opencv4/haarcascades/haarcascade_frontalface_alt.xml",
+        "/usr/share/opencv4/haarcascades/haarcascade_frontalface_alt.xml",
+        "haarcascade_frontalface_alt.xml"
+    };
+    
+    for (const std::string& path : cascadePaths) {
+        if (faceCascade.load(path)) {
+            std::cout << "✅ Face cascade loaded from: " << path << std::endl;
+            return true;
+        }
     }
     
-    cv::Mat gray, edges, result;
+    std::cerr << "❌ Error: Could not load face cascade classifier" << std::endl;
+    std::cerr << "Make sure OpenCV haarcascades are installed" << std::endl;
+    return false;
+}
+
+// Process frame with edge detection and/or face detection
+cv::Mat processFrame(const cv::Mat& inputFrame) {
+    if (inputFrame.empty()) {
+        return inputFrame;
+    }
     
-    // Convert to grayscale
-    cv::cvtColor(inputFrame, gray, cv::COLOR_BGR2GRAY);
+    cv::Mat result = inputFrame.clone();
     
-    // Apply simple Canny edge detection with fixed thresholds
-    cv::Canny(gray, edges, 50, 150);
+    // Apply edge detection if enabled
+    if (edgeDetectionEnabled) {
+        cv::Mat gray, edges;
+        cv::cvtColor(inputFrame, gray, cv::COLOR_BGR2GRAY);
+        cv::Canny(gray, edges, 50, 150);
+        cv::cvtColor(edges, result, cv::COLOR_GRAY2BGR);
+    }
     
-    // Convert edges back to 3-channel for display
-    cv::cvtColor(edges, result, cv::COLOR_GRAY2BGR);
+    // Apply face detection if enabled
+    if (faceDetectionEnabled && !faceCascade.empty()) {
+        cv::Mat gray;
+        cv::cvtColor(inputFrame, gray, cv::COLOR_BGR2GRAY);
+        
+        std::vector<cv::Rect> faces;
+        faceCascade.detectMultiScale(gray, faces, 1.1, 3, 0, cv::Size(30, 30));
+        
+        // If edge detection is enabled, draw boxes on the edge-detected image
+        // Otherwise draw on the original image
+        cv::Mat& drawFrame = edgeDetectionEnabled ? result : result;
+        
+        // Draw bounding boxes around detected faces
+        for (const cv::Rect& face : faces) {
+            cv::rectangle(drawFrame, face, cv::Scalar(0, 255, 0), 2);
+            
+            // Add a label
+            std::string label = "Face";
+            int baseline;
+            cv::Size labelSize = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
+            cv::Point labelPos(face.x, face.y - 10);
+            
+            // Ensure label is within frame bounds
+            if (labelPos.y < 0) labelPos.y = face.y + labelSize.height + 10;
+            
+            cv::putText(drawFrame, label, labelPos, cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 255, 0), 1);
+        }
+        
+        // Print number of faces detected
+        static int frameCount = 0;
+        frameCount++;
+        if (frameCount % 30 == 0) { // Print every 30 frames to avoid spam
+            std::cout << "Detected " << faces.size() << " face(s)" << std::endl;
+        }
+    }
     
     return result;
 }
@@ -168,9 +233,18 @@ int main() {
     // Initialize webcam
     webcamActive = initWebcam();
     
+    // Initialize face detection
+    bool faceDetectionAvailable = initFaceDetection();
+    
     if (webcamActive) {
-        std::cout << "🎥 Live webcam feed active! Press ESC to close, E to toggle edge detection." << std::endl;
-        std::cout << "Edge detection: " << (edgeDetectionEnabled ? "ON" : "OFF") << std::endl;
+        std::cout << "🎥 Live webcam feed active! Controls:" << std::endl;
+        std::cout << "  ESC - Exit" << std::endl;
+        std::cout << "  E   - Toggle edge detection (currently " << (edgeDetectionEnabled ? "ON" : "OFF") << ")" << std::endl;
+        if (faceDetectionAvailable) {
+            std::cout << "  F   - Toggle face detection (currently " << (faceDetectionEnabled ? "ON" : "OFF") << ")" << std::endl;
+        } else {
+            std::cout << "  F   - Face detection (unavailable - cascade not loaded)" << std::endl;
+        }
     } else {
         std::cout << "Webcam failed to initialize. Showing colored background. Press ESC to close." << std::endl;
     }

@@ -55,9 +55,17 @@ make test
 ./camera_test
 ```
 
+## Features
+
+- **Live webcam feed** with OpenGL rendering
+- **Canny edge detection** filter (toggle with E key)
+- **Real-time face detection** with bounding boxes (toggle with F key)
+- **Camera auto-detection** with multiple backend support
+- **Cross-platform compatibility** (macOS, Linux)
+
 ## Controls
 
 - **ESC key** - Quit the application
-- **E key** - Toggle edge detection filter
-- The window shows live webcam feed if camera is available
-- Falls back to colored background if camera access is denied
+- **E key** - Toggle Canny edge detection filter
+- **F key** - Toggle face detection with bounding boxes
+- Both features can be used simultaneously
