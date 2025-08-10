@@ -9,9 +9,8 @@ bin/
 *.exe
 
 # Executables
-webcam_cv_demo
-**/webcam_cv_demo
-fletchBricks/output
+fletch_vision
+**/fletch_vision
 
 # CMake
 CMakeCache.txt

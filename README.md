@@ -34,7 +34,7 @@ On macOS, the app will request camera access when first launched. You can also m
 
 ```bash
 make clean && make
-./webcam_cv_demo
+./fletch_vision
 ```
 
 ### Option 2: Using CMake
@@ -44,7 +44,7 @@ mkdir -p build
 cd build
 cmake ..
 make
-./bin/webcam_cv_demo
+./bin/fletch_vision
 ```
 
 ### Testing Camera Connection

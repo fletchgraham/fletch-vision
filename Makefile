@@ -2,7 +2,7 @@ CXX = clang++
 CXXFLAGS = -std=c++11 -Wall -Wextra
 SRCDIR = src
 OBJDIR = obj
-TARGET = webcam_cv_demo
+TARGET = fletch_vision
 CAMERA_TEST = camera_test
 
 # GLFW paths and flags

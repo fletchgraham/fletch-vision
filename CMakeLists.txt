@@ -16,17 +16,17 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(include)
 
 # Add executable
-add_executable(webcam_cv_demo src/main_windowed.cpp)
+add_executable(fletch_vision src/main_windowed.cpp)
 
 # Link libraries
-target_link_libraries(webcam_cv_demo ${OpenCV_LIBS} glfw)
+target_link_libraries(fletch_vision ${OpenCV_LIBS} glfw)
 
 # Link macOS frameworks for OpenGL
 if(APPLE)
-    target_link_libraries(webcam_cv_demo "-framework OpenGL" "-framework Cocoa" "-framework IOKit")
+    target_link_libraries(fletch_vision "-framework OpenGL" "-framework Cocoa" "-framework IOKit")
 endif()
 
 # Set output directory
-set_target_properties(webcam_cv_demo PROPERTIES
+set_target_properties(fletch_vision PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
