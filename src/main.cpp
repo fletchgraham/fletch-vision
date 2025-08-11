@@ -150,7 +150,7 @@ cv::Mat processFrame(const cv::Mat& inputFrame) {
         cv::Mat depthMap = depthEstimator.estimateDepth(inputFrame);
         if (!depthMap.empty()) {
             // Overlay depth heat map on the current result
-            result = depthEstimator.overlayDepthHeatMap(result, depthMap, 0.6f);
+            result = depthEstimator.overlayDepthHeatMap(result, depthMap, 0.9f);
         }
     }
     
