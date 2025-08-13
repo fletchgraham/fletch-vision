@@ -2,6 +2,11 @@
 
 A C++ computer vision project with multiple demos using OpenCV, GLFW, and OpenGL.
 
+## Demos Available
+
+1. **Main Computer Vision Demo** (`fletch_vision`) - Live webcam feed with edge detection, face detection, and depth estimation
+2. **Simple 3D Cube Demo** (`simple_cube_viewer`) - Interactive 3D cube with mouse orbit controls
+
 ## Prerequisites
 
 - OpenCV 4.x
@@ -33,8 +38,18 @@ On macOS, the app will request camera access when first launched. You can also m
 ### Option 1: Using Makefile (Recommended)
 
 ```bash
+# Build all demos
 make clean && make
+
+# Run the computer vision demo
 ./fletch_vision
+
+# Run the 3D cube demo
+./simple_cube_viewer
+
+# Or use convenience commands
+make run        # Run computer vision demo
+make run-cube   # Run 3D cube demo
 ```
 
 ### Option 2: Using CMake
@@ -57,6 +72,8 @@ make test
 
 ## Features
 
+### Computer Vision Demo (`fletch_vision`)
+
 - **Live webcam feed** with OpenGL rendering
 - **Canny edge detection** filter (toggle with E key)
 - **Real-time face detection** with bounding boxes (toggle with F key)
@@ -64,13 +81,28 @@ make test
 - **Camera auto-detection** with multiple backend support
 - **Cross-platform compatibility** (macOS, Linux)
 
+### 3D Cube Demo (`simple_cube_viewer`)
+
+- **Interactive 3D cube** with colorful faces
+- **Mouse orbit controls** - click and drag to rotate camera around cube
+- **Smooth rotation animation** of the cube itself
+- **Real-time 3D rendering** using OpenGL
+- **No dependencies on OpenCV** - lightweight and fast
+
 ## Controls
+
+### Computer Vision Demo
 
 - **ESC key** - Quit the application
 - **E key** - Toggle Canny edge detection filter
 - **F key** - Toggle face detection with bounding boxes
 - **D key** - Toggle depth estimation heat map overlay
 - All features can be used simultaneously
+
+### 3D Cube Demo
+
+- **Click and drag** - Orbit camera around the cube
+- **ESC key** - Quit the application
 
 ## Depth Estimation Setup
 

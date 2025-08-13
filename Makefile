@@ -3,6 +3,7 @@ CXXFLAGS = -std=c++11 -Wall -Wextra
 SRCDIR = src
 OBJDIR = obj
 TARGET = fletch_vision
+CUBE_DEMO = simple_cube_viewer
 CAMERA_TEST = camera_test
 
 # GLFW paths and flags
@@ -19,9 +20,11 @@ OPENCV_LIBS = -L$(OPENCV_PREFIX)/lib -lopencv_core -lopencv_imgproc -lopencv_hig
 ALL_INCLUDES = $(GLFW_INCLUDE) $(OPENCV_INCLUDE)
 ALL_LIBS = $(GLFW_LIBS) $(OPENCV_LIBS)
 
-all: $(TARGET)
+all: $(TARGET) $(CUBE_DEMO)
 
 test: $(CAMERA_TEST)
+
+cube: $(CUBE_DEMO)
 
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
@@ -29,17 +32,22 @@ $(OBJDIR):
 $(TARGET): $(OBJDIR) src/main.cpp src/DepthEstimator.cpp
 	$(CXX) $(CXXFLAGS) $(ALL_INCLUDES) src/main.cpp src/DepthEstimator.cpp $(ALL_LIBS) -o $(TARGET)
 
+$(CUBE_DEMO): $(OBJDIR) src/cube_main.cpp src/SimpleCubeViewer.cpp
+	$(CXX) $(CXXFLAGS) $(GLFW_INCLUDE) src/cube_main.cpp src/SimpleCubeViewer.cpp $(GLFW_LIBS) -o $(CUBE_DEMO)
+
 $(CAMERA_TEST): camera_test.cpp
 	$(CXX) $(CXXFLAGS) $(OPENCV_INCLUDE) camera_test.cpp $(OPENCV_LIBS) -o $(CAMERA_TEST)
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET) $(CAMERA_TEST)
+	rm -rf $(OBJDIR) $(TARGET) $(CUBE_DEMO) $(CAMERA_TEST)
 
 run: $(TARGET)
 	./$(TARGET)
 
+run-cube: $(CUBE_DEMO)
+	./$(CUBE_DEMO)
+
 run-test: $(CAMERA_TEST)
 	./$(CAMERA_TEST)
 
-.PHONY: all clean run test run-test
-.PHONY: all clean run
+.PHONY: all clean run cube run-cube test run-test
