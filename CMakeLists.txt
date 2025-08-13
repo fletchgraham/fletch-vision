@@ -23,13 +23,18 @@ add_executable(fletch_vision
     src/WebcamCapture.cpp
     src/WebcamFactory.cpp
 )
-add_executable(simple_cube_viewer src/cube_main.cpp src/SimpleCubeViewer.cpp)
+add_executable(simple_cube_viewer 
+    src/cube_main.cpp 
+    src/SimpleCubeViewer.cpp
+    src/WebcamCapture.cpp
+    src/WebcamFactory.cpp
+)
 
 # Link libraries for main fletch_vision app
 target_link_libraries(fletch_vision ${OpenCV_LIBS} glfw)
 
-# Link libraries for simple cube viewer (no OpenCV needed)
-target_link_libraries(simple_cube_viewer glfw)
+# Link libraries for simple cube viewer (now with OpenCV for webcam)
+target_link_libraries(simple_cube_viewer ${OpenCV_LIBS} glfw)
 
 # Link macOS frameworks for OpenGL
 if(APPLE)

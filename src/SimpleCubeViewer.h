@@ -1,6 +1,9 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
+#include <opencv2/opencv.hpp>
+#include "IWebcamCapture.h"
+#include <memory>
 
 class SimpleCubeViewer {
 public:
@@ -16,6 +19,9 @@ private:
     void setupCube();
     void renderCube();
     void updateCamera();
+    void initializeWebcam();
+    void updateWebcamTexture();
+    void createTexture();
     
     // Camera orbit controls
     float cameraDistance;
@@ -33,4 +39,10 @@ private:
     
     // Rotation for the cube
     float cubeRotation;
+    
+    // Webcam and texture
+    std::unique_ptr<IWebcamCapture> webcam;
+    cv::Mat webcamFrame;
+    GLuint textureID;
+    bool webcamActive;
 };
