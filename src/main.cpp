@@ -1,7 +1,8 @@
 #include <GLFW/glfw3.h>
 #include <opencv2/opencv.hpp>
 #include <iostream>
-#include "DepthEstimator.h"
+#include "DepthEstimatorFactory.h"
+#include <memory>
 
 // Global variables
 cv::VideoCapture cap;
@@ -18,7 +19,7 @@ cv::CascadeClassifier faceCascade;
 
 // Depth estimation toggle and estimator
 bool depthEstimationEnabled = false;
-DepthEstimator depthEstimator;
+std::unique_ptr<IDepthEstimator> depthEstimator;
 
 // Error callback function
 void error_callback(int error, const char* description) {
@@ -110,23 +111,16 @@ bool initFaceDetection() {
 
 // Initialize depth estimation
 bool initDepthEstimation() {
-    // Try to load MiDaS v2.1 small model - lightweight and proven working
-    std::vector<std::string> modelPaths = {
-        "models/midasv2_small_256x256.onnx",
-        "midasv2_small_256x256.onnx"
-    };
+    // Create depth estimator using the factory with default paths
+    depthEstimator = DepthEstimatorFactory::createWithDefaultPaths();
     
-    for (const std::string& path : modelPaths) {
-        if (depthEstimator.initialize(path)) {
-            std::cout << "✅ MiDaS v2.1 depth estimation initialized from: " << path << std::endl;
-            return true;
-        }
+    if (depthEstimator) {
+        std::cout << "✅ Depth estimation initialized successfully" << std::endl;
+        return true;
+    } else {
+        std::cerr << "❌ Error: Could not initialize depth estimation" << std::endl;
+        return false;
     }
-    
-    std::cerr << "❌ Error: Could not load MiDaS v2.1 depth estimation model" << std::endl;
-    std::cerr << "Make sure midasv2_small_256x256.onnx is in the models/ directory" << std::endl;
-    std::cerr << "Download from: https://github.com/isl-org/MiDaS/releases/download/v2_1/model-small.onnx" << std::endl;
-    return false;
 }
 
 // Process frame with edge detection, face detection, and/or depth estimation
@@ -146,11 +140,11 @@ cv::Mat processFrame(const cv::Mat& inputFrame) {
     }
     
     // Apply depth estimation if enabled
-    if (depthEstimationEnabled && depthEstimator.isInitialized()) {
-        cv::Mat depthMap = depthEstimator.estimateDepth(inputFrame);
+    if (depthEstimationEnabled && depthEstimator && depthEstimator->isInitialized()) {
+        cv::Mat depthMap = depthEstimator->estimateDepth(inputFrame);
         if (!depthMap.empty()) {
             // Overlay depth heat map on the current result
-            result = depthEstimator.overlayDepthHeatMap(result, depthMap, 0.9f);
+            result = depthEstimator->overlayDepthHeatMap(result, depthMap, 0.9f);
         }
     }
     

@@ -16,7 +16,11 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(include)
 
 # Add executables
-add_executable(fletch_vision src/main.cpp src/DepthEstimator.cpp)
+add_executable(fletch_vision 
+    src/main.cpp 
+    src/DepthEstimator.cpp 
+    src/DepthEstimatorFactory.cpp
+)
 add_executable(simple_cube_viewer src/cube_main.cpp src/SimpleCubeViewer.cpp)
 
 # Link libraries for main fletch_vision app

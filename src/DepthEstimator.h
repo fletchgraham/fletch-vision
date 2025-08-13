@@ -5,26 +5,30 @@
 #include <iostream>
 #include <string>
 #include <array>
+#include "IDepthEstimator.h"
 
-class DepthEstimator {
+class DepthEstimator : public IDepthEstimator {
 public:
     DepthEstimator();
-    ~DepthEstimator();
+    ~DepthEstimator() override;
     
     // Initialize the depth estimation model
-    bool initialize(const std::string& modelPath);
+    bool initialize(const std::string& modelPath = "") override;
     
     // Estimate depth from input image and return depth map
-    cv::Mat estimateDepth(const cv::Mat& inputImage);
+    cv::Mat estimateDepth(const cv::Mat& inputImage) override;
     
     // Create a colorized heat map from depth data
-    cv::Mat createDepthHeatMap(const cv::Mat& depthMap);
+    cv::Mat createDepthHeatMap(const cv::Mat& depthMap) override;
     
     // Overlay depth heat map on original image
-    cv::Mat overlayDepthHeatMap(const cv::Mat& originalImage, const cv::Mat& depthMap, float alpha = 0.6f);
+    cv::Mat overlayDepthHeatMap(const cv::Mat& originalImage, const cv::Mat& depthMap, float alpha = 0.6f) override;
     
     // Check if model is loaded
-    bool isInitialized() const { return modelLoaded; }
+    bool isInitialized() const override { return modelLoaded; }
+    
+    // Get description of this depth estimation method
+    std::string getDescription() const override { return "MiDaS v2.1 Neural Network"; }
     
     // Normalize depth map to 0-255 range (based on iwatake2222 implementation)
     bool normalizeMinMax(const cv::Mat& matDepth, cv::Mat& matDepthNormalized);
