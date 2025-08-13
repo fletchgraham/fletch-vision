@@ -313,7 +313,7 @@ void SimpleCubeViewer::updateMeshGeometry() {
     }
     
     // Update vertex Z coordinates based on depth values
-    float depthScale = 0.0005f;  // Scale factor for depth displacement (subtle movement)
+    float depthScale = 0.002f;  // Scale factor for depth displacement (subtle movement)
     for (int y = 0; y < MESH_HEIGHT; y++) {
         for (int x = 0; x < MESH_WIDTH; x++) {
             int index = y * MESH_WIDTH + x;
