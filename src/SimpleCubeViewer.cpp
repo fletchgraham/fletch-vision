@@ -318,20 +318,23 @@ void SimpleCubeViewer::updateMeshGeometry() {
         for (int x = 0; x < MESH_WIDTH; x++) {
             int index = y * MESH_WIDTH + x;
             
+            // Flip y-coordinate to match texture coordinate system
+            int flippedY = (MESH_HEIGHT - 1) - y;
+            
             // Get depth value - handle different data types
             float depth = 0.0f;
             if (grayDepth.type() == CV_32F) {
-                depth = grayDepth.at<float>(y, x);
+                depth = grayDepth.at<float>(flippedY, x);
             } else if (grayDepth.type() == CV_8U) {
-                depth = grayDepth.at<uchar>(y, x) / 255.0f;
+                depth = grayDepth.at<uchar>(flippedY, x) / 255.0f;
             } else if (grayDepth.type() == CV_32FC3) {
                 // If it's still 3-channel, get the first channel
-                cv::Vec3f pixel = grayDepth.at<cv::Vec3f>(y, x);
+                cv::Vec3f pixel = grayDepth.at<cv::Vec3f>(flippedY, x);
                 depth = pixel[0];
             } else {
                 // Convert to float if unknown type
                 grayDepth.convertTo(grayDepth, CV_32F);
-                depth = grayDepth.at<float>(y, x);
+                depth = grayDepth.at<float>(flippedY, x);
             }
             
             // Apply depth displacement to Z coordinate
