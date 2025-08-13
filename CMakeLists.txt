@@ -26,6 +26,8 @@ add_executable(fletch_vision
 add_executable(simple_cube_viewer 
     src/cube_main.cpp 
     src/SimpleCubeViewer.cpp
+    src/DepthEstimator.cpp
+    src/DepthEstimatorFactory.cpp
     src/WebcamCapture.cpp
     src/WebcamFactory.cpp
 )

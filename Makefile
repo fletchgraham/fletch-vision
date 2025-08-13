@@ -32,8 +32,8 @@ $(OBJDIR):
 $(TARGET): $(OBJDIR) src/main.cpp src/DepthEstimator.cpp src/DepthEstimatorFactory.cpp src/WebcamCapture.cpp src/WebcamFactory.cpp
 	$(CXX) $(CXXFLAGS) $(ALL_INCLUDES) src/main.cpp src/DepthEstimator.cpp src/DepthEstimatorFactory.cpp src/WebcamCapture.cpp src/WebcamFactory.cpp $(ALL_LIBS) -o $(TARGET)
 
-$(CUBE_DEMO): $(OBJDIR) src/cube_main.cpp src/SimpleCubeViewer.cpp src/WebcamCapture.cpp src/WebcamFactory.cpp
-	$(CXX) $(CXXFLAGS) $(ALL_INCLUDES) src/cube_main.cpp src/SimpleCubeViewer.cpp src/WebcamCapture.cpp src/WebcamFactory.cpp $(ALL_LIBS) -o $(CUBE_DEMO)
+$(CUBE_DEMO): $(OBJDIR) src/cube_main.cpp src/SimpleCubeViewer.cpp src/DepthEstimator.cpp src/DepthEstimatorFactory.cpp src/WebcamCapture.cpp src/WebcamFactory.cpp
+	$(CXX) $(CXXFLAGS) $(ALL_INCLUDES) src/cube_main.cpp src/SimpleCubeViewer.cpp src/DepthEstimator.cpp src/DepthEstimatorFactory.cpp src/WebcamCapture.cpp src/WebcamFactory.cpp $(ALL_LIBS) -o $(CUBE_DEMO)
 
 $(CAMERA_TEST): camera_test.cpp
 	$(CXX) $(CXXFLAGS) $(OPENCV_INCLUDE) camera_test.cpp $(OPENCV_LIBS) -o $(CAMERA_TEST)

@@ -1,5 +1,6 @@
 #include "SimpleCubeViewer.h"
 #include "WebcamFactory.h"
+#include "DepthEstimatorFactory.h"
 #include <iostream>
 #include <cmath>
 
@@ -23,6 +24,7 @@ SimpleCubeViewer::SimpleCubeViewer()
     , cubeRotation(0.0f)
     , textureID(0)
     , webcamActive(false)
+    , depthEstimatorActive(false)
 {
 }
 
@@ -53,8 +55,9 @@ bool SimpleCubeViewer::initialize(GLFWwindow* window) {
     glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
     handleResize(windowWidth, windowHeight);
     
-    // Initialize webcam and texture
+    // Initialize webcam and depth estimator
     initializeWebcam();
+    initializeDepthEstimator();
     createTexture();
     
     std::cout << "SimpleCubeViewer initialized successfully!" << std::endl;
@@ -62,7 +65,9 @@ bool SimpleCubeViewer::initialize(GLFWwindow* window) {
     std::cout << "  Click and drag - Orbit around cube" << std::endl;
     std::cout << "  ESC - Exit" << std::endl;
     
-    if (webcamActive) {
+    if (webcamActive && depthEstimatorActive) {
+        std::cout << "🔥 Depth estimation active - cube faces will show inferno depth map!" << std::endl;
+    } else if (webcamActive) {
         std::cout << "📹 Webcam active - cube faces will show live camera feed!" << std::endl;
     } else {
         std::cout << "📷 No webcam - cube will show solid colors" << std::endl;
@@ -134,8 +139,12 @@ void SimpleCubeViewer::renderCube() {
     glPushMatrix();
     glRotatef(cubeRotation, 0.1f, 1.0f, 0.1f);  // Rotate on a slight diagonal
     
-    // Enable texturing if webcam is active
-    if (webcamActive && textureID != 0) {
+    // Enable texturing if depth estimation is active, fallback to webcam, then solid colors
+    if (depthEstimatorActive && textureID != 0) {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glColor3f(1.0f, 1.0f, 1.0f);  // White color to show texture properly
+    } else if (webcamActive && textureID != 0) {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, textureID);
         glColor3f(1.0f, 1.0f, 1.0f);  // White color to show texture properly
@@ -231,7 +240,7 @@ void SimpleCubeViewer::renderCube() {
     glEnd();
     
     // Disable texturing
-    if (webcamActive && textureID != 0) {
+    if ((depthEstimatorActive || webcamActive) && textureID != 0) {
         glDisable(GL_TEXTURE_2D);
     }
     
@@ -255,6 +264,22 @@ void SimpleCubeViewer::initializeWebcam() {
     }
 }
 
+void SimpleCubeViewer::initializeDepthEstimator() {
+    std::cout << "Initializing depth estimator for inferno depth mapping..." << std::endl;
+    
+    // Create depth estimator using the factory with model path
+    depthEstimator = DepthEstimatorFactory::create("models/midasv2_small_256x256.onnx");
+    
+    if (depthEstimator) {
+        depthEstimatorActive = true;
+        std::cout << "✅ Depth estimator initialized successfully for 3D demo!" << std::endl;
+        std::cout << "🔥 Inferno depth mapping will be applied to cube faces!" << std::endl;
+    } else {
+        depthEstimatorActive = false;
+        std::cout << "⚠️  Depth estimator not available - falling back to webcam or solid colors" << std::endl;
+    }
+}
+
 void SimpleCubeViewer::createTexture() {
     // Generate OpenGL texture
     glGenTextures(1, &textureID);
@@ -267,33 +292,47 @@ void SimpleCubeViewer::createTexture() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
-void SimpleCubeViewer::updateWebcamTexture() {
-    if (!webcam || !webcam->isActive() || textureID == 0) {
+void SimpleCubeViewer::updateDepthTexture() {
+    if (!webcam || !webcam->isActive() || !depthEstimator || textureID == 0) {
         return;
     }
     
-    // Capture frame from webcam - just one line thanks to the refactored interface!
+    // Capture frame from webcam
     if (webcam->captureFrame(webcamFrame) && !webcamFrame.empty()) {
-        // Convert BGR to RGB for OpenGL
-        cv::Mat rgbFrame;
-        cv::cvtColor(webcamFrame, rgbFrame, cv::COLOR_BGR2RGB);
+        // Generate depth map using the depth estimator
+        cv::Mat rawDepthMap = depthEstimator->estimateDepth(webcamFrame);
         
-        // Flip vertically for OpenGL texture coordinates
-        cv::Mat flippedFrame;
-        cv::flip(rgbFrame, flippedFrame, 0);
-        
-        // Update OpenGL texture
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 
-                     flippedFrame.cols, flippedFrame.rows, 0, 
-                     GL_RGB, GL_UNSIGNED_BYTE, flippedFrame.data);
+        if (!rawDepthMap.empty()) {
+            // Create colorized depth heat map (this handles the inferno colormap)
+            cv::Mat depthHeatMap = depthEstimator->createDepthHeatMap(rawDepthMap);
+            
+            if (!depthHeatMap.empty()) {
+                // Resize the heat map to match the webcam frame size for proper texture mapping
+                cv::Mat resizedDepthMap;
+                cv::resize(depthHeatMap, resizedDepthMap, webcamFrame.size());
+                
+                // Convert BGR to RGB for OpenGL
+                cv::Mat rgbFrame;
+                cv::cvtColor(resizedDepthMap, rgbFrame, cv::COLOR_BGR2RGB);
+                
+                // Flip vertically for OpenGL texture coordinates
+                cv::Mat flippedFrame;
+                cv::flip(rgbFrame, flippedFrame, 0);
+                
+                // Update OpenGL texture with properly sized depth map
+                glBindTexture(GL_TEXTURE_2D, textureID);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 
+                             flippedFrame.cols, flippedFrame.rows, 0, 
+                             GL_RGB, GL_UNSIGNED_BYTE, flippedFrame.data);
+            }
+        }
     }
 }
 
 void SimpleCubeViewer::render() {
-    // Update webcam texture if available
-    if (webcamActive) {
-        updateWebcamTexture();
+    // Update depth texture if both webcam and depth estimator are available
+    if (webcamActive && depthEstimatorActive) {
+        updateDepthTexture();
     }
     
     // Clear the screen and depth buffer

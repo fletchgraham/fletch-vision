@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <opencv2/opencv.hpp>
 #include "IWebcamCapture.h"
+#include "IDepthEstimator.h"
 #include <memory>
 
 class SimpleCubeViewer {
@@ -20,7 +21,8 @@ private:
     void renderCube();
     void updateCamera();
     void initializeWebcam();
-    void updateWebcamTexture();
+    void initializeDepthEstimator();
+    void updateDepthTexture();
     void createTexture();
     
     // Camera orbit controls
@@ -42,7 +44,10 @@ private:
     
     // Webcam and texture
     std::unique_ptr<IWebcamCapture> webcam;
+    std::unique_ptr<IDepthEstimator> depthEstimator;
     cv::Mat webcamFrame;
+    cv::Mat depthFrame;
     GLuint textureID;
     bool webcamActive;
+    bool depthEstimatorActive;
 };
