@@ -29,8 +29,8 @@ cube: $(CUBE_DEMO)
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
-$(TARGET): $(OBJDIR) src/main.cpp src/DepthEstimator.cpp src/DepthEstimatorFactory.cpp
-	$(CXX) $(CXXFLAGS) $(ALL_INCLUDES) src/main.cpp src/DepthEstimator.cpp src/DepthEstimatorFactory.cpp $(ALL_LIBS) -o $(TARGET)
+$(TARGET): $(OBJDIR) src/main.cpp src/DepthEstimator.cpp src/DepthEstimatorFactory.cpp src/WebcamCapture.cpp src/WebcamFactory.cpp
+	$(CXX) $(CXXFLAGS) $(ALL_INCLUDES) src/main.cpp src/DepthEstimator.cpp src/DepthEstimatorFactory.cpp src/WebcamCapture.cpp src/WebcamFactory.cpp $(ALL_LIBS) -o $(TARGET)
 
 $(CUBE_DEMO): $(OBJDIR) src/cube_main.cpp src/SimpleCubeViewer.cpp
 	$(CXX) $(CXXFLAGS) $(GLFW_INCLUDE) src/cube_main.cpp src/SimpleCubeViewer.cpp $(GLFW_LIBS) -o $(CUBE_DEMO)

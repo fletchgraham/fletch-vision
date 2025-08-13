@@ -2,13 +2,13 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include "DepthEstimatorFactory.h"
+#include "WebcamFactory.h"
 #include <memory>
 
 // Global variables
-cv::VideoCapture cap;
+std::unique_ptr<IWebcamCapture> webcam;
 cv::Mat frame;
 GLuint textureID;
-bool webcamActive = false;
 
 // Simple edge detection toggle
 bool edgeDetectionEnabled = false;
@@ -47,44 +47,16 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 // Initialize webcam
 bool initWebcam() {
-    std::cout << "Attempting to open camera..." << std::endl;
+    // Create webcam using the factory
+    webcam = WebcamFactory::create();
     
-    // Try different camera backends and indices
-    std::vector<int> backends = {cv::CAP_AVFOUNDATION, cv::CAP_ANY};
-    std::vector<int> indices = {0, 1, 2};
-    
-    for (int backend : backends) {
-        for (int index : indices) {
-            std::cout << "Trying camera index " << index << " with backend " << backend << std::endl;
-            cap.open(index, backend);
-            
-            if (cap.isOpened()) {
-                std::cout << "Camera opened successfully with index " << index << " and backend " << backend << std::endl;
-                
-                // Set camera properties
-                cap.set(cv::CAP_PROP_FRAME_WIDTH, 640);
-                cap.set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-                
-                // Test if we can actually read a frame
-                cv::Mat testFrame;
-                if (cap.read(testFrame) && !testFrame.empty()) {
-                    std::cout << "✅ Webcam initialized successfully!" << std::endl;
-                    std::cout << "Frame size: " << testFrame.cols << "x" << testFrame.rows << std::endl;
-                    return true;
-                } else {
-                    std::cout << "Camera opened but couldn't read frame" << std::endl;
-                    cap.release();
-                }
-            }
-        }
+    if (webcam && webcam->isActive()) {
+        std::cout << "✅ Webcam initialized successfully!" << std::endl;
+        return true;
+    } else {
+        std::cerr << "❌ Error: Could not initialize webcam" << std::endl;
+        return false;
     }
-    
-    std::cerr << "❌ Error: Could not open any webcam" << std::endl;
-    std::cerr << "Make sure:" << std::endl;
-    std::cerr << "1. Camera permissions are granted to Terminal" << std::endl;
-    std::cerr << "2. No other app is using the camera" << std::endl;
-    std::cerr << "3. Camera is properly connected" << std::endl;
-    return false;
 }
 
 // Initialize face detection
@@ -201,7 +173,7 @@ void matToTexture(const cv::Mat& mat) {
 
 // Render the texture
 void renderTexture(int windowWidth, int windowHeight) {
-    if (!webcamActive) return;
+    if (!webcam || !webcam->isActive()) return;
     
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, textureID);
@@ -260,7 +232,7 @@ int main() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
     // Initialize webcam
-    webcamActive = initWebcam();
+    bool webcamActive = initWebcam();
     
     // Initialize face detection
     bool faceDetectionAvailable = initFaceDetection();
@@ -294,10 +266,9 @@ int main() {
         glViewport(0, 0, width, height);
         
         // Clear the screen
-        if (webcamActive) {
+        if (webcam && webcam->isActive()) {
             // Capture frame from webcam
-            cap >> frame;
-            if (!frame.empty()) {
+            if (webcam->captureFrame(frame) && !frame.empty()) {
                 // Process frame (apply edge detection if enabled)
                 cv::Mat processedFrame = processFrame(frame);
                 matToTexture(processedFrame);
@@ -320,8 +291,8 @@ int main() {
     std::cout << "Closing webcam and window..." << std::endl;
     
     // Clean up
-    if (webcamActive) {
-        cap.release();
+    if (webcam) {
+        webcam->release();
     }
     glDeleteTextures(1, &textureID);
     glfwTerminate();
