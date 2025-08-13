@@ -1,6 +1,6 @@
 # Fletch Vision
 
-Real-time computer vision and 3D visualization using C++, OpenCV, and OpenGL.
+Real-time computer vision and 3D visualization using C++, OpenCV, and OpenGL. Features monocular depth estimation, 3d mesh displacement based on depth, face tracking, canny edge detection, all realtime on a webcam stream.
 
 ## Demos
 
