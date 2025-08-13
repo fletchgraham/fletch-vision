@@ -2,6 +2,8 @@
 
 Real-time computer vision and 3D visualization using C++, OpenCV, and OpenGL. Features monocular depth estimation, 3d mesh displacement based on depth, face tracking, canny edge detection, all realtime on a webcam stream.
 
+https://github.com/user-attachments/assets/42af6ff8-9ebd-4c54-8f9e-dd827b599c31
+
 ## Demos
 
 1. **Computer Vision Demo** (`fletch_vision`) - Live webcam with edge detection, face detection, and depth estimation
