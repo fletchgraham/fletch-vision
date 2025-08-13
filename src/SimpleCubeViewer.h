@@ -17,13 +17,27 @@ public:
     void handleResize(int width, int height);
     
 private:
-    void setupCube();
-    void renderCube();
+    void setupMesh();
+    void renderMesh();
     void updateCamera();
     void initializeWebcam();
     void initializeDepthEstimator();
-    void updateDepthTexture();
+    void updateMeshTexture();
     void createTexture();
+    void updateMeshGeometry();
+    
+    // Mesh properties
+    static const int MESH_WIDTH = 128;
+    static const int MESH_HEIGHT = 128;
+    static const int MESH_VERTICES = MESH_WIDTH * MESH_HEIGHT;
+    static const int MESH_QUADS = (MESH_WIDTH - 1) * (MESH_HEIGHT - 1);
+    static const int MESH_INDICES = MESH_QUADS * 6; // 2 triangles per quad, 3 vertices per triangle
+    
+    // Mesh data
+    float* vertices;    // x, y, z coordinates
+    float* texCoords;   // u, v texture coordinates  
+    unsigned int* indices; // triangle indices
+    cv::Mat depthMap;   // Current depth map for displacement
     
     // Camera orbit controls
     float cameraDistance;
@@ -38,9 +52,6 @@ private:
     // Window dimensions
     int windowWidth;
     int windowHeight;
-    
-    // Rotation for the cube
-    float cubeRotation;
     
     // Webcam and texture
     std::unique_ptr<IWebcamCapture> webcam;

@@ -12,7 +12,7 @@
     #include <GL/glu.h>
 #endif
 
-SimpleCubeViewer::SimpleCubeViewer() 
+SimpleCubeViewer::SimpleCubeViewer()
     : cameraDistance(5.0f)
     , cameraTheta(0.0f)
     , cameraPhi(0.0f)
@@ -21,10 +21,12 @@ SimpleCubeViewer::SimpleCubeViewer()
     , firstMouse(true)
     , windowWidth(800)
     , windowHeight(600)
-    , cubeRotation(0.0f)
     , textureID(0)
     , webcamActive(false)
     , depthEstimatorActive(false)
+    , vertices(nullptr)
+    , texCoords(nullptr)
+    , indices(nullptr)
 {
 }
 
@@ -33,6 +35,11 @@ SimpleCubeViewer::~SimpleCubeViewer() {
     if (textureID != 0) {
         glDeleteTextures(1, &textureID);
     }
+    
+    // Clean up mesh data
+    if (vertices) delete[] vertices;
+    if (texCoords) delete[] texCoords;
+    if (indices) delete[] indices;
     
     // Clean up webcam
     if (webcam) {
@@ -58,19 +65,22 @@ bool SimpleCubeViewer::initialize(GLFWwindow* window) {
     // Initialize webcam and depth estimator
     initializeWebcam();
     initializeDepthEstimator();
+    
+    // Setup mesh and texture
+    setupMesh();
     createTexture();
     
     std::cout << "SimpleCubeViewer initialized successfully!" << std::endl;
     std::cout << "Controls:" << std::endl;
-    std::cout << "  Click and drag - Orbit around cube" << std::endl;
+    std::cout << "  Click and drag - Orbit around mesh" << std::endl;
     std::cout << "  ESC - Exit" << std::endl;
     
     if (webcamActive && depthEstimatorActive) {
-        std::cout << "🔥 Depth estimation active - cube faces will show inferno depth map!" << std::endl;
+        std::cout << "🔥 Depth-displaced mesh active - 3D surface with webcam texture!" << std::endl;
     } else if (webcamActive) {
-        std::cout << "📹 Webcam active - cube faces will show live camera feed!" << std::endl;
+        std::cout << "📹 Webcam active - flat mesh will show live camera feed!" << std::endl;
     } else {
-        std::cout << "📷 No webcam - cube will show solid colors" << std::endl;
+        std::cout << "📷 No webcam - mesh will show solid colors" << std::endl;
     }
     
     return true;
@@ -131,116 +141,81 @@ void SimpleCubeViewer::updateCamera() {
               0, 1, 0);    // up vector
 }
 
-void SimpleCubeViewer::renderCube() {
-    // Apply a slow rotation to make the cube more interesting
-    cubeRotation += 0.5f;
-    if (cubeRotation > 360.0f) cubeRotation -= 360.0f;
+void SimpleCubeViewer::setupMesh() {
+    // Allocate memory for mesh data
+    vertices = new float[MESH_VERTICES * 3];  // x, y, z for each vertex
+    texCoords = new float[MESH_VERTICES * 2]; // u, v for each vertex
+    indices = new unsigned int[MESH_INDICES]; // triangle indices
     
+    // Generate vertices, texture coordinates, and indices for 128x128 grid
+    for (int y = 0; y < MESH_HEIGHT; y++) {
+        for (int x = 0; x < MESH_WIDTH; x++) {
+            int index = y * MESH_WIDTH + x;
+            
+            // Vertices: map from 0 to 1, then center around origin (-1 to 1)
+            vertices[index * 3 + 0] = (float)x / (MESH_WIDTH - 1) * 2.0f - 1.0f;   // X: -1 to 1
+            vertices[index * 3 + 1] = (float)y / (MESH_HEIGHT - 1) * 2.0f - 1.0f;  // Y: -1 to 1
+            vertices[index * 3 + 2] = 0.0f;  // Z: initially flat, will be displaced by depth
+            
+            // Texture coordinates: map directly to webcam frame
+            texCoords[index * 2 + 0] = (float)x / (MESH_WIDTH - 1);   // U: 0 to 1
+            texCoords[index * 2 + 1] = (float)y / (MESH_HEIGHT - 1);  // V: 0 to 1
+        }
+    }
+    
+    // Generate indices for triangles (each quad becomes two triangles)
+    int currentIndex = 0;
+    for (int y = 0; y < MESH_HEIGHT - 1; y++) {
+        for (int x = 0; x < MESH_WIDTH - 1; x++) {
+            // Bottom left of current quad
+            int bottomLeft = y * MESH_WIDTH + x;
+            int bottomRight = bottomLeft + 1;
+            int topLeft = (y + 1) * MESH_WIDTH + x;
+            int topRight = topLeft + 1;
+            
+            // First triangle: bottom-left, bottom-right, top-left
+            indices[currentIndex++] = bottomLeft;
+            indices[currentIndex++] = bottomRight;
+            indices[currentIndex++] = topLeft;
+            
+            // Second triangle: bottom-right, top-right, top-left
+            indices[currentIndex++] = bottomRight;
+            indices[currentIndex++] = topRight;
+            indices[currentIndex++] = topLeft;
+        }
+    }
+}
+
+void SimpleCubeViewer::renderMesh() {
     glPushMatrix();
-    glRotatef(cubeRotation, 0.1f, 1.0f, 0.1f);  // Rotate on a slight diagonal
     
-    // Enable texturing if depth estimation is active, fallback to webcam, then solid colors
-    if (depthEstimatorActive && textureID != 0) {
+    // Scale and position the mesh
+    glScalef(2.0f, 1.5f, 1.0f);  // Make it wider and slightly taller
+    
+    // Enable texturing with the webcam feed
+    if (webcamActive && textureID != 0) {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, textureID);
-        glColor3f(1.0f, 1.0f, 1.0f);  // White color to show texture properly
-    } else if (webcamActive && textureID != 0) {
-        glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glColor3f(1.0f, 1.0f, 1.0f);  // White color to show texture properly
+        glColor3f(1.0f, 1.0f, 1.0f);  // White to show texture properly
     }
     
-    // Draw a textured cube
-    glBegin(GL_QUADS);
-    
-    // Front face
-    if (webcamActive) {
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
-    } else {
-        glColor3f(1.0f, 0.0f, 0.0f);  // Red fallback
-        glVertex3f(-1.0f, -1.0f,  1.0f);
-        glVertex3f( 1.0f, -1.0f,  1.0f);
-        glVertex3f( 1.0f,  1.0f,  1.0f);
-        glVertex3f(-1.0f,  1.0f,  1.0f);
+    // Draw the mesh using triangles
+    glBegin(GL_TRIANGLES);
+    for (int i = 0; i < MESH_INDICES; i += 3) {
+        for (int j = 0; j < 3; j++) {
+            int vertexIndex = indices[i + j];
+            
+            // Set texture coordinate
+            glTexCoord2f(texCoords[vertexIndex * 2], texCoords[vertexIndex * 2 + 1]);
+            
+            // Set vertex position
+            glVertex3f(vertices[vertexIndex * 3], vertices[vertexIndex * 3 + 1], vertices[vertexIndex * 3 + 2]);
+        }
     }
-    
-    // Back face
-    if (webcamActive) {
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f,  1.0f, -1.0f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f( 1.0f,  1.0f, -1.0f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);
-    } else {
-        glColor3f(0.0f, 1.0f, 0.0f);  // Green fallback
-        glVertex3f(-1.0f, -1.0f, -1.0f);
-        glVertex3f(-1.0f,  1.0f, -1.0f);
-        glVertex3f( 1.0f,  1.0f, -1.0f);
-        glVertex3f( 1.0f, -1.0f, -1.0f);
-    }
-    
-    // Top face
-    if (webcamActive) {
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f, -1.0f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f, -1.0f);
-    } else {
-        glColor3f(0.0f, 0.0f, 1.0f);  // Blue fallback
-        glVertex3f(-1.0f,  1.0f, -1.0f);
-        glVertex3f(-1.0f,  1.0f,  1.0f);
-        glVertex3f( 1.0f,  1.0f,  1.0f);
-        glVertex3f( 1.0f,  1.0f, -1.0f);
-    }
-    
-    // Bottom face
-    if (webcamActive) {
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f( 1.0f, -1.0f, -1.0f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);
-    } else {
-        glColor3f(1.0f, 1.0f, 0.0f);  // Yellow fallback
-        glVertex3f(-1.0f, -1.0f, -1.0f);
-        glVertex3f( 1.0f, -1.0f, -1.0f);
-        glVertex3f( 1.0f, -1.0f,  1.0f);
-        glVertex3f(-1.0f, -1.0f,  1.0f);
-    }
-    
-    // Right face
-    if (webcamActive) {
-        glTexCoord2f(1.0f, 0.0f); glVertex3f( 1.0f, -1.0f, -1.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f, -1.0f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
-        glTexCoord2f(0.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
-    } else {
-        glColor3f(1.0f, 0.0f, 1.0f);  // Magenta fallback
-        glVertex3f( 1.0f, -1.0f, -1.0f);
-        glVertex3f( 1.0f,  1.0f, -1.0f);
-        glVertex3f( 1.0f,  1.0f,  1.0f);
-        glVertex3f( 1.0f, -1.0f,  1.0f);
-    }
-    
-    // Left face
-    if (webcamActive) {
-        glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f, -1.0f);
-        glTexCoord2f(1.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);
-        glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
-        glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f, -1.0f);
-    } else {
-        glColor3f(0.0f, 1.0f, 1.0f);  // Cyan fallback
-        glVertex3f(-1.0f, -1.0f, -1.0f);
-        glVertex3f(-1.0f, -1.0f,  1.0f);
-        glVertex3f(-1.0f,  1.0f,  1.0f);
-        glVertex3f(-1.0f,  1.0f, -1.0f);
-    }
-    
     glEnd();
     
     // Disable texturing
-    if ((depthEstimatorActive || webcamActive) && textureID != 0) {
+    if (webcamActive && textureID != 0) {
         glDisable(GL_TEXTURE_2D);
     }
     
@@ -292,47 +267,84 @@ void SimpleCubeViewer::createTexture() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
-void SimpleCubeViewer::updateDepthTexture() {
-    if (!webcam || !webcam->isActive() || !depthEstimator || textureID == 0) {
+void SimpleCubeViewer::updateMeshTexture() {
+    if (!webcam || !webcam->isActive() || textureID == 0) {
         return;
     }
     
-    // Capture frame from webcam
+    // Capture frame from webcam for texture
     if (webcam->captureFrame(webcamFrame) && !webcamFrame.empty()) {
-        // Generate depth map using the depth estimator
-        cv::Mat rawDepthMap = depthEstimator->estimateDepth(webcamFrame);
+        // Convert BGR to RGB for OpenGL
+        cv::Mat rgbFrame;
+        cv::cvtColor(webcamFrame, rgbFrame, cv::COLOR_BGR2RGB);
         
-        if (!rawDepthMap.empty()) {
-            // Create colorized depth heat map (this handles the inferno colormap)
-            cv::Mat depthHeatMap = depthEstimator->createDepthHeatMap(rawDepthMap);
+        // Flip vertically for OpenGL texture coordinates
+        cv::Mat flippedFrame;
+        cv::flip(rgbFrame, flippedFrame, 0);
+        
+        // Update OpenGL texture with webcam frame
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 
+                     flippedFrame.cols, flippedFrame.rows, 0, 
+                     GL_RGB, GL_UNSIGNED_BYTE, flippedFrame.data);
+    }
+}
+
+void SimpleCubeViewer::updateMeshGeometry() {
+    if (!depthEstimator || !depthEstimatorActive || !webcam) return;
+    
+    // Capture current frame for depth estimation
+    cv::Mat currentFrame;
+    if (!webcam->captureFrame(currentFrame) || currentFrame.empty()) return;
+    
+    cv::Mat depthMap = depthEstimator->estimateDepth(currentFrame);
+    if (depthMap.empty()) return;
+    
+    // Resize depth map to match mesh resolution
+    cv::Mat resizedDepthMap;
+    cv::resize(depthMap, resizedDepthMap, cv::Size(MESH_WIDTH, MESH_HEIGHT));
+    
+    // Convert to single channel if needed (depth should be grayscale)
+    cv::Mat grayDepth;
+    if (resizedDepthMap.channels() == 3) {
+        cv::cvtColor(resizedDepthMap, grayDepth, cv::COLOR_BGR2GRAY);
+    } else {
+        grayDepth = resizedDepthMap;
+    }
+    
+    // Update vertex Z coordinates based on depth values
+    float depthScale = 0.5f;  // Scale factor for depth displacement
+    for (int y = 0; y < MESH_HEIGHT; y++) {
+        for (int x = 0; x < MESH_WIDTH; x++) {
+            int index = y * MESH_WIDTH + x;
             
-            if (!depthHeatMap.empty()) {
-                // Resize the heat map to match the webcam frame size for proper texture mapping
-                cv::Mat resizedDepthMap;
-                cv::resize(depthHeatMap, resizedDepthMap, webcamFrame.size());
-                
-                // Convert BGR to RGB for OpenGL
-                cv::Mat rgbFrame;
-                cv::cvtColor(resizedDepthMap, rgbFrame, cv::COLOR_BGR2RGB);
-                
-                // Flip vertically for OpenGL texture coordinates
-                cv::Mat flippedFrame;
-                cv::flip(rgbFrame, flippedFrame, 0);
-                
-                // Update OpenGL texture with properly sized depth map
-                glBindTexture(GL_TEXTURE_2D, textureID);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 
-                             flippedFrame.cols, flippedFrame.rows, 0, 
-                             GL_RGB, GL_UNSIGNED_BYTE, flippedFrame.data);
+            // Get depth value - handle different data types
+            float depth = 0.0f;
+            if (grayDepth.type() == CV_32F) {
+                depth = grayDepth.at<float>(y, x);
+            } else if (grayDepth.type() == CV_8U) {
+                depth = grayDepth.at<uchar>(y, x) / 255.0f;
+            } else if (grayDepth.type() == CV_32FC3) {
+                // If it's still 3-channel, get the first channel
+                cv::Vec3f pixel = grayDepth.at<cv::Vec3f>(y, x);
+                depth = pixel[0];
+            } else {
+                // Convert to float if unknown type
+                grayDepth.convertTo(grayDepth, CV_32F);
+                depth = grayDepth.at<float>(y, x);
             }
+            
+            // Apply depth displacement to Z coordinate
+            vertices[index * 3 + 2] = depth * depthScale;
         }
     }
 }
 
 void SimpleCubeViewer::render() {
-    // Update depth texture if both webcam and depth estimator are available
+    // Update mesh texture and geometry if both webcam and depth estimator are available
     if (webcamActive && depthEstimatorActive) {
-        updateDepthTexture();
+        updateMeshTexture();
+        updateMeshGeometry();
     }
     
     // Clear the screen and depth buffer
@@ -341,6 +353,6 @@ void SimpleCubeViewer::render() {
     // Update camera position
     updateCamera();
     
-    // Render the cube
-    renderCube();
+    // Render the mesh
+    renderMesh();
 }
